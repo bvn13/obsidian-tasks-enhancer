@@ -11,6 +11,12 @@ const TASKS_PLUGIN_ENHANCER_DEFAULT_SETTINGS: TasksPluginEnhencerSettings = {
 	isNeedToAddScheduledDateOnToday: true
 }
 
+interface TaskBlock {
+    start: number;
+    end: number;
+    lines: string[];
+}
+
 export default class TasksPluginEnhancer extends Plugin {
 	settings: TasksPluginEnhencerSettings;
 
@@ -29,7 +35,6 @@ export default class TasksPluginEnhancer extends Plugin {
 		// const statusBarItemEl = this.addStatusBarItem();
 		// statusBarItemEl.setText('Status Bar Text');
 
-		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'tasks-enhancer-new-task',
 			name: 'New Task',
@@ -53,6 +58,20 @@ export default class TasksPluginEnhancer extends Plugin {
 				editor.setLine(cursor.line, lineContent.replace('- [ ] ', ''));
 
 				this.adjustCursorPosition(editor, lineContent, ']', 1);
+			}
+		});
+		this.addCommand({
+			id: 'tasks-enhancer-move-block-up',
+			name: 'Move block up',
+			editorCallback: (editor: Editor) => {
+				this.moveTaskBlock(editor, 'up');
+			}
+		});
+		this.addCommand({
+			id: 'tasks-enhancer-move-block-down',
+			name: 'Move block down',
+			editorCallback: (editor: Editor) => {
+				this.moveTaskBlock(editor, 'down');
 			}
 		});
 		// // This adds an editor command that can perform some operation on the current editor instance
@@ -109,7 +128,7 @@ export default class TasksPluginEnhancer extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	async adjustCursorPosition(editor: Editor, lineContent: String, afterSubstring: string, rightShift: number) {
+	private adjustCursorPosition(editor: Editor, lineContent: String, afterSubstring: string, rightShift: number) {
 		const cursor = editor.getCursor();
 		const starPosition = lineContent.indexOf(afterSubstring);
 		if (starPosition !== -1) {
@@ -121,6 +140,177 @@ export default class TasksPluginEnhancer extends Plugin {
 			console.log("Unable to set cursor position for line <" + lineContent + "> after <" + afterSubstring + ">");
 		}
 	}
+
+	// *************************************************************************************
+
+	private moveTaskBlock(editor: Editor, direction: 'up' | 'down') {
+        const cursor = editor.getCursor();
+        const line = cursor.line;
+        const content = editor.getLine(line);
+        
+        console.log('Starting moveTaskBlock, direction:', direction, 'line:', line, 'content:', content);
+
+        if (!content.trim().startsWith('- [')) {
+            console.log('Not a task, exiting');
+            return;
+        }
+
+        const currentIndent = this.getIndentLevel(content);
+        console.log('Current indent:', currentIndent);
+
+        const taskBlock = this.findTaskBlock(editor, line, currentIndent);
+        if (!taskBlock) {
+            console.log('No task block found');
+            return;
+        }
+        console.log('Task block:', taskBlock);
+
+        let targetLine: number;
+        
+        if (direction === 'up') {
+            targetLine = this.findTargetLineUp(editor, line, currentIndent);
+        } else {
+            // Для перемещения вниз находим конец следующего блока
+            targetLine = this.findTargetLineDown(editor, taskBlock.end, currentIndent);
+        }
+        
+        console.log('Target line:', targetLine);
+
+        if (targetLine === -1 || targetLine === taskBlock.start) {
+            console.log('Invalid target line, exiting');
+            return;
+        }
+
+        this.moveBlockSimple(editor, taskBlock, targetLine, direction);
+    }
+
+    private getIndentLevel(line: string): number {
+        const match = line.match(/^(\s*)/);
+        return match ? match[1].length : 0;
+    }
+
+    private findTaskBlock(editor: Editor, startLine: number, baseIndent: number): TaskBlock | null {
+        const lines: string[] = [];
+        let currentLine = startLine;
+        const totalLines = editor.lineCount();
+
+        lines.push(editor.getLine(startLine));
+
+        currentLine = startLine + 1;
+        while (currentLine < totalLines) {
+            const lineContent = editor.getLine(currentLine);
+            const indent = this.getIndentLevel(lineContent);
+            
+            if (indent > baseIndent) {
+                lines.push(lineContent);
+                currentLine++;
+            } else {
+                break;
+            }
+        }
+
+        return {
+            start: startLine,
+            end: startLine + lines.length - 1,
+            lines: lines
+        };
+    }
+
+    private findTargetLineUp(editor: Editor, startLine: number, targetIndent: number): number {
+        for (let line = startLine - 1; line >= 0; line--) {
+            const lineContent = editor.getLine(line);
+            if (lineContent.trim() === '') continue;
+            
+            const indent = this.getIndentLevel(lineContent);
+            if (indent === targetIndent) {
+                return line;
+            }
+            if (indent < targetIndent) {
+                return line + 1;
+            }
+        }
+        return 0;
+    }
+
+    private findTargetLineDown(editor: Editor, endLine: number, targetIndent: number): number {
+        const totalLines = editor.lineCount();
+        console.log('Finding target line down from:', endLine, 'total lines:', totalLines);
+        
+        // Находим следующий блок с таким же отступом
+        let nextBlockStart = -1;
+        for (let line = endLine + 1; line < totalLines; line++) {
+            const lineContent = editor.getLine(line);
+            if (lineContent.trim() === '') continue;
+            
+            const indent = this.getIndentLevel(lineContent);
+            if (indent <= targetIndent) {
+                nextBlockStart = line;
+                break;
+            }
+        }
+        
+        if (nextBlockStart === -1) {
+            console.log('No next block found, returning end:', totalLines);
+            return totalLines;
+        }
+        
+        // Находим полный блок (с подзадачами) для этого начала
+        const nextBlock = this.findTaskBlock(editor, nextBlockStart, targetIndent);
+        if (!nextBlock) {
+            console.log('Could not find next block details, returning start:', nextBlockStart);
+            return nextBlockStart;
+        }
+        
+        console.log('Next block ends at:', nextBlock.end);
+        // Возвращаем позицию ПОСЛЕ конца следующего блока
+        return nextBlock.end + 1;
+    }
+
+    private moveBlockSimple(editor: Editor, block: TaskBlock, targetLine: number, direction: 'up' | 'down') {
+        console.log('Moving block from', block.start, '-', block.end, 'to', targetLine);
+        
+        // Получаем весь текст
+        const content = editor.getValue();
+        const lines = content.split('\n');
+        
+        console.log('Total lines before:', lines.length);
+        
+        // Удаляем блок из исходной позиции
+        const linesWithoutBlock = [
+            ...lines.slice(0, block.start),
+            ...lines.slice(block.end + 1)
+        ];
+        
+        console.log('Lines without block:', linesWithoutBlock.length);
+        
+        // Корректируем целевую позицию
+        let adjustedTargetLine = targetLine;
+        if (targetLine > block.end) {
+            // После удаления блока, позиция смещается на размер удаленного блока
+            adjustedTargetLine = targetLine - (block.end - block.start + 1);
+        }
+        
+        console.log('Adjusted target line:', adjustedTargetLine);
+        
+        // Вставляем блок в новую позицию
+        const newLines = [
+            ...linesWithoutBlock.slice(0, adjustedTargetLine),
+            ...block.lines,
+            ...linesWithoutBlock.slice(adjustedTargetLine)
+        ];
+        
+        console.log('Total lines after:', newLines.length);
+        
+        // Обновляем редактор
+        editor.setValue(newLines.join('\n'));
+        
+        // Устанавливаем курсор
+        editor.setCursor({ line: adjustedTargetLine, ch: 0 });
+        
+        console.log('Move completed');
+    }
+
+	// **********************************************************************************************
 }
 
 // class SampleModal extends Modal {
