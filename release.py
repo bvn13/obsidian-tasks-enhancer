@@ -135,6 +135,9 @@ def main():
     version = get_current_version()
     add_new_version_to_versions_json(version)
     
+    print("Checking tags")
+    tags = run_command(f'git tag', capture_output=True)
+    print(tags)
     print(f"Creating tag {version}")
     run_command(f'git tag -a {version} -m "{version}"', capture_output=False)
     print("Pushing tag to to origin")
