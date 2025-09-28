@@ -1,5 +1,5 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import type { Moment } from "moment";
+import * as moment from "moment";
 
 interface TasksPluginEnhencerSettings {
 	isNeedToAddCreatedAtDateOnToday: boolean;
