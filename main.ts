@@ -163,7 +163,7 @@ export default class TasksPluginEnhancer extends Plugin {
             console.log('No task block found');
             return;
         }
-        console.log('Task block:', taskBlock);
+        //console.log('Task block:', taskBlock);
 
         let targetLine: number;
         
@@ -174,14 +174,14 @@ export default class TasksPluginEnhancer extends Plugin {
             targetLine = this.findTargetLineDown(editor, taskBlock.end, currentIndent);
         }
         
-        console.log('Target line:', targetLine);
+        //console.log('Target line:', targetLine);
 
         if (targetLine === -1 || targetLine === taskBlock.start) {
             console.log('Invalid target line, exiting');
             return;
         }
 
-        this.moveBlockSimple(editor, taskBlock, targetLine, direction);
+        this.moveBlockSimple(editor, taskBlock, targetLine, direction, cursor.ch);
     }
 
     private getIndentLevel(line: string): number {
@@ -234,7 +234,7 @@ export default class TasksPluginEnhancer extends Plugin {
 
     private findTargetLineDown(editor: Editor, endLine: number, targetIndent: number): number {
         const totalLines = editor.lineCount();
-        console.log('Finding target line down from:', endLine, 'total lines:', totalLines);
+        //console.log('Finding target line down from:', endLine, 'total lines:', totalLines);
         
         // Находим следующий блок с таким же отступом
         let nextBlockStart = -1;
@@ -261,19 +261,19 @@ export default class TasksPluginEnhancer extends Plugin {
             return nextBlockStart;
         }
         
-        console.log('Next block ends at:', nextBlock.end);
+        //console.log('Next block ends at:', nextBlock.end);
         // Возвращаем позицию ПОСЛЕ конца следующего блока
         return nextBlock.end + 1;
     }
 
-    private moveBlockSimple(editor: Editor, block: TaskBlock, targetLine: number, direction: 'up' | 'down') {
-        console.log('Moving block from', block.start, '-', block.end, 'to', targetLine);
+    private moveBlockSimple(editor: Editor, block: TaskBlock, targetLine: number, direction: 'up' | 'down', originalCursorPos: number) {
+        //console.log('Moving block from', block.start, '-', block.end, 'to', targetLine);
         
         // Получаем весь текст
         const content = editor.getValue();
         const lines = content.split('\n');
         
-        console.log('Total lines before:', lines.length);
+        //console.log('Total lines before:', lines.length);
         
         // Удаляем блок из исходной позиции
         const linesWithoutBlock = [
@@ -281,7 +281,7 @@ export default class TasksPluginEnhancer extends Plugin {
             ...lines.slice(block.end + 1)
         ];
         
-        console.log('Lines without block:', linesWithoutBlock.length);
+        //console.log('Lines without block:', linesWithoutBlock.length);
         
         // Корректируем целевую позицию
         let adjustedTargetLine = targetLine;
@@ -290,7 +290,7 @@ export default class TasksPluginEnhancer extends Plugin {
             adjustedTargetLine = targetLine - (block.end - block.start + 1);
         }
         
-        console.log('Adjusted target line:', adjustedTargetLine);
+        //console.log('Adjusted target line:', adjustedTargetLine);
         
         // Вставляем блок в новую позицию
         const newLines = [
@@ -299,15 +299,25 @@ export default class TasksPluginEnhancer extends Plugin {
             ...linesWithoutBlock.slice(adjustedTargetLine)
         ];
         
-        console.log('Total lines after:', newLines.length);
+        //console.log('Total lines after:', newLines.length);
         
         // Обновляем редактор
         editor.setValue(newLines.join('\n'));
         
-        // Устанавливаем курсор
-        editor.setCursor({ line: adjustedTargetLine, ch: 0 });
+        // Устанавливаем курсор на той же строке и в той же позиции
+        // Если курсор был в перемещенной строке, он останется в ней
+        let newCursorLine = adjustedTargetLine;
         
-        console.log('Move completed');
+        // Если курсор был в одной из подзадач, находим соответствующую строку
+        if (originalCursorPos > 0) {
+            // Сохраняем позицию в строке
+            editor.setCursor({ line: newCursorLine, ch: Math.min(originalCursorPos, editor.getLine(newCursorLine).length) });
+        } else {
+            // Или просто в начало строки
+            editor.setCursor({ line: newCursorLine, ch: 0 });
+        }
+        
+        //console.log('Move completed');
     }
 
 	// **********************************************************************************************
