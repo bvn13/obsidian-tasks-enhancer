@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "obsidian-tasks-enhancer-plugin",
+	"name": "Tasks Enhancer",
+	"version": "0.0.1",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
+	"description": "Enhances functionality of Tasks Plugin",
+	"author": "bvn13",
+	"authorUrl": "https://bvn13.me",
 	"fundingUrl": "https://obsidian.md/pricing",
 	"isDesktopOnly": false
 }
