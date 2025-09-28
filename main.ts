@@ -148,7 +148,7 @@ export default class TasksPluginEnhancer extends Plugin {
         const line = cursor.line;
         const content = editor.getLine(line);
         
-        console.log('Starting moveTaskBlock, direction:', direction, 'line:', line, 'content:', content);
+        //console.log('Starting moveTaskBlock, direction:', direction, 'line:', line, 'content:', content);
 
         if (!content.trim().startsWith('- [')) {
             console.log('Not a task, exiting');
@@ -156,7 +156,7 @@ export default class TasksPluginEnhancer extends Plugin {
         }
 
         const currentIndent = this.getIndentLevel(content);
-        console.log('Current indent:', currentIndent);
+        //console.log('Current indent:', currentIndent);
 
         const taskBlock = this.findTaskBlock(editor, line, currentIndent);
         if (!taskBlock) {
@@ -164,6 +164,24 @@ export default class TasksPluginEnhancer extends Plugin {
             return;
         }
         //console.log('Task block:', taskBlock);
+
+        // Проверяем границы для перемещения вверх
+        if (direction === 'up') {
+            const canMoveUp = this.canMoveUp(editor, taskBlock.start);
+            if (!canMoveUp) {
+                console.log('Cannot move up - boundary reached');
+                return;
+            }
+        }
+        
+        // Проверяем границы для перемещения вниз
+        if (direction === 'down') {
+            const canMoveDown = this.canMoveDown(editor, taskBlock.end);
+            if (!canMoveDown) {
+                console.log('Cannot move down - boundary reached');
+                return;
+            }
+        }
 
         let targetLine: number;
         
@@ -182,6 +200,50 @@ export default class TasksPluginEnhancer extends Plugin {
         }
 
         this.moveBlockSimple(editor, taskBlock, targetLine, direction, cursor.ch);
+    }
+
+    private canMoveUp(editor: Editor, startLine: number): boolean {
+        // Проверяем, есть ли выше задачи с таким же или меньшим отступом
+        for (let line = startLine - 1; line >= 0; line--) {
+            const lineContent = editor.getLine(line);
+            
+            // Пропускаем пустые строки
+            if (lineContent.trim() === '') continue;
+            
+            // Если нашли задачу - можно перемещаться
+            if (lineContent.trim().startsWith('- [')) {
+                return true;
+            }
+            
+            // Если нашли не-задачу (текст, заголовок и т.д.) - граница
+            return false;
+        }
+        
+        // Дошли до начала файла - граница
+        return false;
+    }
+
+    private canMoveDown(editor: Editor, endLine: number): boolean {
+        const totalLines = editor.lineCount();
+        
+        // Проверяем, есть ли ниже задачи с таким же или меньшим отступом
+        for (let line = endLine + 1; line < totalLines; line++) {
+            const lineContent = editor.getLine(line);
+            
+            // Пропускаем пустые строки
+            if (lineContent.trim() === '') continue;
+            
+            // Если нашли задачу - можно перемещаться
+            if (lineContent.trim().startsWith('- [')) {
+                return true;
+            }
+            
+            // Если нашли не-задачу (текст, заголовок и т.д.) - граница
+            return false;
+        }
+        
+        // Дошли до конца файла - граница
+        return false;
     }
 
     private getIndentLevel(line: string): number {
@@ -305,10 +367,9 @@ export default class TasksPluginEnhancer extends Plugin {
         editor.setValue(newLines.join('\n'));
         
         // Устанавливаем курсор на той же строке и в той же позиции
-        // Если курсор был в перемещенной строке, он останется в ней
         let newCursorLine = adjustedTargetLine;
         
-        // Если курсор был в одной из подзадач, находим соответствующую строку
+        // Если курсор был в перемещенной строке, он останется в ней
         if (originalCursorPos > 0) {
             // Сохраняем позицию в строке
             editor.setCursor({ line: newCursorLine, ch: Math.min(originalCursorPos, editor.getLine(newCursorLine).length) });
