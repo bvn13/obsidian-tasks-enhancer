@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-tasks-enhancer-plugin",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Enhancer for Obsidian Tasks plugin",
 	"main": "main.js",
 	"scripts": {
