@@ -46,6 +46,25 @@ def get_current_version() -> str:
     return version
 
 
+def commit_changes():
+    # Проверяем статус git
+    git_status = run_command("git status -s")
+    print(f"******************\n{git_status}\n******************\n")
+    
+    if git_status:
+        # Есть изменения для коммита
+        try:
+            commit_message = input("Enter commit message (Ctrl+C to abort): ")
+        except KeyboardInterrupt:
+            print("\nAborted")
+            sys.exit(0)
+        
+        run_command("git add -A", capture_output=False)
+        run_command(f'git commit -m "{commit_message}"', capture_output=False)
+    else:
+        print("Nothing to commit")
+
+
 def parse_version(version_str):
     """Парсит версию в список чисел для сравнения"""
     return [int(part) for part in version_str.split('.')]
@@ -105,36 +124,22 @@ def main():
         version_command = "npm version minor"
     else:
         # По умолчанию используем patch
-        version_type = "patch" 
+        version_type = "patch"
         version_command = "npm version patch"
     
+    commit_changes()
+    
+    run_command(version_command, capture_output=False)
     print(f"Using version type: {version_type}")
-    
-    # Проверяем статус git
-    git_status = run_command("git status -s")
-    print(f"******************\n{git_status}\n******************\n")
-    
-    if git_status:
-        # Есть изменения для коммита
-        try:
-            commit_message = input("Enter commit message (Ctrl+C to abort): ")
-        except KeyboardInterrupt:
-            print("\nAborted")
-            sys.exit(0)
-        
-        run_command("git add -A", capture_output=False)
-        run_command(f'git commit -m "{commit_message}"', capture_output=False)
-        run_command(version_command, capture_output=False)
-    else:
-        print("Nothing to commit")
     
     version = get_current_version()
     add_new_version_to_versions_json(version)
     
     print(f"Creating tag {version}")
-    
     run_command(f'git tag -a {version} -m "{version}"', capture_output=False)
-    run_command(f'git push origin {version}', capture_output=False)
+    print("Pushing tag to to origin")
+    res = run_command(f'git push origin {version}', capture_output=True)
+    print(res)
 
 if __name__ == "__main__":
     main()
