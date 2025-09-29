@@ -153,6 +153,7 @@ def main():
     print("************************************************************")
     print("Pushing tag to origin")
     res = run_command(f'git push origin {version}', capture_output=True)
+    res = run_command(f'git push origin master', capture_output=True)
     print(res)
 
 if __name__ == "__main__":
