@@ -49,8 +49,12 @@ export default class TasksPluginEnhancer extends Plugin {
 					return;
 				}
 				
-				// Start building the task
-				let taskContent = "- [ ] " + trimmedContent;
+				// Get the original indentation
+				const indentMatch = lineContent.match(/^(\s*)/);
+				const originalIndent = indentMatch ? indentMatch[1] : '';
+				
+				// Start building the task with original indentation
+				let taskContent = originalIndent + "- [ ] " + trimmedContent;
 				
 				// Get current date
 				const now = dayjs().format("YYYY-MM-DD");
