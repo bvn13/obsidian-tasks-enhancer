@@ -31,7 +31,7 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def do_release():
+def make_release():
     run_command('npm run build', capture_output=False)
     run_command('cp main.js dist/', capture_output=False)
     run_command('cp styles.css dist/', capture_output=False)
@@ -135,24 +135,32 @@ def main():
         version_type = "patch"
         version_command = "npm version patch"
     
+    print("************************************************************")
     commit_changes()
     
+    print("************************************************************")
     run_command(version_command, capture_output=False)
     print(f"Using version type: {version_type}")
     
     version = get_current_version()
     add_new_version_to_versions_json(version)
-    do_release()
-    run_command('git add versions.json', capture_output=False)
-    run_command('git commit -m "versions.json"', capture_output=False)
+    make_release()
+    print("************************************************************")
+    res = run_command('git add versions.json', capture_output=True)
+    print(res)
+    print("************************************************************")
+    res = run_command(f'git commit -m "v{version}"', capture_output=True)
+    print(res)
     
+    print("************************************************************")
     print("Checking tags")
     tags = run_command(f'git tag', capture_output=True)
     print(tags)
-    #print(f"Creating tag {version}")
+    print("************************************************************")
     status = run_command('git status', capture_output=True)
     print(status)
-    print("Pushing tag to to origin")
+    print("************************************************************")
+    print("Pushing tag to origin")
     res = run_command(f'git push origin {version}', capture_output=True)
     print(res)
 
