@@ -44,17 +44,22 @@ export default class TasksPluginEnhancer extends Plugin {
 				const lineContent = editor.getLine(cursor.line);
 				const trimmedContent = lineContent.trim();
 				
-				// Check if the line is already a task
-				if (trimmedContent.startsWith('- [')) {
+				// skip if task is done
+				if (trimmedContent.startsWith('- [') && !trimmedContent.startsWith('- [ ')) {
 					return;
 				}
-				
+
 				// Get the original indentation
 				const indentMatch = lineContent.match(/^(\s*)/);
 				const originalIndent = indentMatch ? indentMatch[1] : '';
 				
+				let taskContent = '';
 				// Start building the task with original indentation
-				let taskContent = originalIndent + "- [ ] " + trimmedContent;
+				if (!trimmedContent.startsWith('- [')) {
+					taskContent = originalIndent + "- [ ] " + trimmedContent;
+				} else {
+					taskContent = originalIndent + trimmedContent;
+				}
 				
 				// Get current date
 				const now = dayjs().format("YYYY-MM-DD");
