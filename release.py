@@ -31,6 +31,14 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def do_release():
+    run_command('npm run build', capture_output=False)
+    run_command('cp main.js dist/', capture_output=False)
+    run_command('cp styles.css dist/', capture_output=False)
+    run_command('cp manifest.json dist/', capture_output=False)
+    run_command('git add dist/*', capture_output=False)
+
+
 def get_current_version() -> str:
     # Получаем версию из manifest.json
     try:
@@ -134,6 +142,7 @@ def main():
     
     version = get_current_version()
     add_new_version_to_versions_json(version)
+    do_release()
     run_command('git add versions.json', capture_output=False)
     run_command('git commit -m "versions.json"', capture_output=False)
     
