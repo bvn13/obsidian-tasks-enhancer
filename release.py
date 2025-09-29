@@ -36,7 +36,7 @@ def make_release():
     run_command('cp main.js dist/', capture_output=False)
     run_command('cp styles.css dist/', capture_output=False)
     run_command('cp manifest.json dist/', capture_output=False)
-    run_command('git add dist/main.js dist/styles.css dist/manifest.json', capture_output=False)
+    run_command('git add dist/main.js dist/styles.css dist/manifest.json -f', capture_output=False)
 
 
 def get_current_version() -> str:
