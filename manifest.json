@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-tasks-enhancer-plugin",
 	"name": "Tasks Enhancer",
-	"version": "0.3.4",
+	"version": "0.3.5",
 	"minAppVersion": "0.15.0",
 	"description": "Enhances functionality of Tasks Plugin",
 	"author": "bvn13",
