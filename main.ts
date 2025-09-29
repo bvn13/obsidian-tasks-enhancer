@@ -1,5 +1,6 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import * as moment from "moment";
+import { default as dayjs } from 'dayjs';
+
 
 interface TasksPluginEnhencerSettings {
 	isNeedToAddCreatedAtDateOnToday: boolean;
@@ -46,7 +47,7 @@ export default class TasksPluginEnhancer extends Plugin {
 				if (this.settings.isNeedToAddScheduledDateOnToday) {
 					task += " ⏳ {{date}}";
 				}
-				var now = moment().format("YYYY-MM-DD");
+				var now = dayjs().format("YYYY-MM-DD");
 				while (task.contains('{{date}}')) {
 					task = task.replace('{{date}}', now)
 				}
