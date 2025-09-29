@@ -8,5 +8,5 @@ Here are plans and their realisation.
 
 - [x] command to quickly insert Task in current line
 - [x] command to move current Tasks group (task with descendencies) up and down
-- [ ] command to set task being started
+- [x] command to set task being started
 - [x] distribution pack

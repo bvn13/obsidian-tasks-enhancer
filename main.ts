@@ -18,6 +18,9 @@ interface TaskBlock {
     lines: string[];
 }
 
+type TasksEnhancerAction = (editor: Editor, taskContent: string) => string;
+
+
 export default class TasksPluginEnhancer extends Plugin {
 	settings: TasksPluginEnhencerSettings;
 
@@ -40,45 +43,39 @@ export default class TasksPluginEnhancer extends Plugin {
 			id: 'tasks-enhancer-new-task',
 			name: 'New Task',
 			editorCallback: (editor: Editor) => {
-				const cursor = editor.getCursor();
-				const lineContent = editor.getLine(cursor.line);
-				const trimmedContent = lineContent.trim();
-				
-				// skip if task is done
-				if (trimmedContent.startsWith('- [') && !trimmedContent.startsWith('- [ ')) {
-					return;
-				}
+				this.performAction(editor, (editor: Editor, taskContent: string) => {
+					// Get current date
+					const now = dayjs().format("YYYY-MM-DD");
+					
+					// Check if creation date is needed and not already present
+					if (this.settings.isNeedToAddCreatedAtDateOnToday && !taskContent.includes('➕')) {
+						taskContent += " ➕ " + now;
+					}
+					
+					// Check if scheduled date is needed and not already present
+					if (this.settings.isNeedToAddScheduledDateOnToday && !taskContent.includes('⏳')) {
+						taskContent += " ⏳ " + now;
+					}
 
-				// Get the original indentation
-				const indentMatch = lineContent.match(/^(\s*)/);
-				const originalIndent = indentMatch ? indentMatch[1] : '';
-				
-				let taskContent = '';
-				// Start building the task with original indentation
-				if (!trimmedContent.startsWith('- [')) {
-					taskContent = originalIndent + "- [ ] " + trimmedContent;
-				} else {
-					taskContent = originalIndent + trimmedContent;
-				}
-				
-				// Get current date
-				const now = dayjs().format("YYYY-MM-DD");
-				
-				// Check if creation date is needed and not already present
-				if (this.settings.isNeedToAddCreatedAtDateOnToday && !taskContent.includes('➕')) {
-					taskContent += " ➕ " + now;
-				}
-				
-				// Check if scheduled date is needed and not already present
-				if (this.settings.isNeedToAddScheduledDateOnToday && !taskContent.includes('⏳')) {
-					taskContent += " ⏳ " + now;
-				}
-				
-				// Replace the entire line
-				editor.setLine(cursor.line, taskContent);
-				
-				// Adjust cursor position to be after the checkbox
-				this.adjustCursorPosition(editor, taskContent, ']', 1);
+					return taskContent;
+				});
+			}
+		});
+		this.addCommand({
+			id: 'tasks-enhancer-start-work',
+			name: 'Start working on task',
+			editorCallback: (editor: Editor) => {
+				this.performAction(editor, (editor: Editor, taskContent: string) => {
+					// Get current date
+					const now = dayjs().format("YYYY-MM-DD");
+					
+					// Check if start date is needed and not already present
+					if (!taskContent.includes('🛫')) {
+						taskContent += " 🛫 " + now;
+					}
+
+					return taskContent;
+				});
 			}
 		});
 		this.addCommand({
@@ -147,6 +144,37 @@ export default class TasksPluginEnhancer extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	private performAction(editor: Editor, action: TasksEnhancerAction) {
+		const cursor = editor.getCursor();
+		const lineContent = editor.getLine(cursor.line);
+		const trimmedContent = lineContent.trim();
+		
+		// skip if task is done
+		if (trimmedContent.startsWith('- [') && !trimmedContent.startsWith('- [ ')) {
+			return;
+		}
+
+		// Get the original indentation
+		const indentMatch = lineContent.match(/^(\s*)/);
+		const originalIndent = indentMatch ? indentMatch[1] : '';
+		
+		let taskContent = '';
+		// Start building the task with original indentation
+		if (!trimmedContent.startsWith('- [')) {
+			taskContent = originalIndent + "- [ ] " + trimmedContent;
+		} else {
+			taskContent = originalIndent + trimmedContent;
+		}
+
+		taskContent = action(editor, taskContent);
+		
+		// Replace the entire line
+		editor.setLine(cursor.line, taskContent);
+		
+		// Adjust cursor position to be after the checkbox
+		this.adjustCursorPosition(editor, taskContent, ']', 1);
 	}
 
 	private adjustCursorPosition(editor: Editor, lineContent: String, afterSubstring: string, rightShift: number) {
