@@ -36,7 +36,7 @@ def do_release():
     run_command('cp main.js dist/', capture_output=False)
     run_command('cp styles.css dist/', capture_output=False)
     run_command('cp manifest.json dist/', capture_output=False)
-    run_command('git add dist/*', capture_output=False)
+    run_command('git add dist/main.js dist/styles.css dist/manifest.json', capture_output=False)
 
 
 def get_current_version() -> str:
@@ -150,7 +150,8 @@ def main():
     tags = run_command(f'git tag', capture_output=True)
     print(tags)
     #print(f"Creating tag {version}")
-    #run_command(f'git tag -a {version} -m "{version}"', capture_output=False)
+    status = run_command('git status', capture_output=True)
+    print(status)
     print("Pushing tag to to origin")
     res = run_command(f'git push origin {version}', capture_output=True)
     print(res)
