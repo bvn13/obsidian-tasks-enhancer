@@ -40,25 +40,30 @@ export default class TasksPluginEnhancer extends Plugin {
 			id: 'tasks-enhancer-new-task',
 			name: 'New Task',
 			editorCallback: (editor: Editor) => {
-				var task = "- [ ] ";
-				if (this.settings.isNeedToAddCreatedAtDateOnToday) {
-					task += " ➕ {{date}}";
-				}
-				if (this.settings.isNeedToAddScheduledDateOnToday) {
-					task += " ⏳ {{date}}";
-				}
-				var now = dayjs().format("YYYY-MM-DD");
-				while (task.contains('{{date}}')) {
-					task = task.replace('{{date}}', now)
-				}
-				editor.replaceSelection(task);
+				const cursor = editor.getCursor();
+				const lineContent = editor.getLine(cursor.line);
 				
-				// adjust cursor position
-                const cursor = editor.getCursor();
-                const lineContent = editor.getLine(cursor.line);
-				editor.setLine(cursor.line, lineContent.replace('- [ ] ', ''));
-
-				this.adjustCursorPosition(editor, lineContent, ']', 1);
+				// Start building the task
+				let taskContent = "- [ ] " + lineContent.trim();
+				
+				// Get current date
+				const now = dayjs().format("YYYY-MM-DD");
+				
+				// Check if creation date is needed and not already present
+				if (this.settings.isNeedToAddCreatedAtDateOnToday && !taskContent.includes('➕')) {
+					taskContent += " ➕ " + now;
+				}
+				
+				// Check if scheduled date is needed and not already present
+				if (this.settings.isNeedToAddScheduledDateOnToday && !taskContent.includes('⏳')) {
+					taskContent += " ⏳ " + now;
+				}
+				
+				// Replace the entire line
+				editor.setLine(cursor.line, taskContent);
+				
+				// Adjust cursor position to be after the checkbox
+				this.adjustCursorPosition(editor, taskContent, ']', 1);
 			}
 		});
 		this.addCommand({
