@@ -144,7 +144,7 @@ def main():
     
     version = get_current_version()
     add_new_version_to_versions_json(version)
-    make_release()
+    #make_release()
     print("************************************************************")
     res = run_command('git add versions.json', capture_output=True)
     print(res)
