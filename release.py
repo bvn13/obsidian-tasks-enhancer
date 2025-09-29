@@ -135,7 +135,7 @@ def main():
     version = get_current_version()
     add_new_version_to_versions_json(version)
     run_command('git add versions.json', capture_output=False)
-    run_command('git comment -m "versions.json"', capture_output=False)
+    run_command('git commit -m "versions.json"', capture_output=False)
     
     print("Checking tags")
     tags = run_command(f'git tag', capture_output=True)
