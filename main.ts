@@ -42,9 +42,15 @@ export default class TasksPluginEnhancer extends Plugin {
 			editorCallback: (editor: Editor) => {
 				const cursor = editor.getCursor();
 				const lineContent = editor.getLine(cursor.line);
+				const trimmedContent = lineContent.trim();
+				
+				// Check if the line is already a task
+				if (trimmedContent.startsWith('- [')) {
+					return;
+				}
 				
 				// Start building the task
-				let taskContent = "- [ ] " + lineContent.trim();
+				let taskContent = "- [ ] " + trimmedContent;
 				
 				// Get current date
 				const now = dayjs().format("YYYY-MM-DD");
