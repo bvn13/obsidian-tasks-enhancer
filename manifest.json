@@ -1,7 +1,7 @@
 {
 	"id": "tasks-enhancer",
 	"name": "Tasks Enhancer",
-	"version": "0.4.2",
+	"version": "0.4.3",
 	"minAppVersion": "0.15.0",
 	"description": "Enhances functionality of Tasks Plugin",
 	"author": "bvn13",
